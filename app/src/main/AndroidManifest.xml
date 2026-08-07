@@ -5,7 +5,7 @@
 
     <application
         android:label="Tech News"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_launcher"
         android:theme="@style/Theme.TechNews"
         android:allowBackup="true">
 
