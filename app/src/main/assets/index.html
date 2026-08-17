@@ -8,8 +8,10 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif;background:#f5f5f7;color:#1d1d1f;-webkit-font-smoothing:antialiased}
-.header{position:sticky;top:0;z-index:10;background:rgba(245,245,247,.85);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.06);padding:16px 20px 14px;padding-top:calc(16px + env(safe-area-inset-top))}
-.header-content{display:flex;justify-content:space-between;align-items:center;max-width:640px;margin:0 auto}
+
+/* Sticky header + filters container */
+.top-bar{position:sticky;top:0;z-index:10;background:rgba(245,245,247,.88);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.06);padding-top:calc(16px + env(safe-area-inset-top))}
+.header-content{display:flex;justify-content:space-between;align-items:center;padding:0 20px 14px;max-width:640px;margin:0 auto}
 .header-text{display:flex;flex-direction:column;gap:3px}
 .title{font-size:22px;font-weight:700;letter-spacing:-.5px}
 .subtitle{font-size:12px;color:#86868b;font-weight:500}
@@ -19,6 +21,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-s
 .refresh-btn:active{transform:scale(.92);color:#0071e3}
 .refresh-btn.spinning svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ✨ NEW: Source filter pills */
+.source-filters{display:flex;gap:8px;overflow-x:auto;padding:12px 20px;max-width:640px;margin:0 auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch}
+.source-filters::-webkit-scrollbar{display:none}
+.filter-pill{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:100px;border:1px solid rgba(0,0,0,.08);background:#fff;color:#1d1d1f;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s ease;white-space:nowrap;font-family:inherit;letter-spacing:-.1px}
+.filter-pill:hover{background:#f5f5f7;border-color:rgba(0,0,0,.12)}
+.filter-pill:active{transform:scale(.95)}
+.filter-pill.active{background:#1d1d1f;color:#fff;border-color:#1d1d1f;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.filter-pill .pill-icon{width:14px;height:14px;border-radius:3px;flex-shrink:0;background:#e8e8ed}
+.filter-pill.active .pill-icon{background:rgba(255,255,255,.2)}
+.filter-pill .count{font-size:11px;font-weight:600;color:#86868b;margin-left:2px;padding:1px 6px;background:rgba(0,0,0,.06);border-radius:100px}
+.filter-pill.active .count{background:rgba(255,255,255,.18);color:rgba(255,255,255,.9)}
+
 .container{padding:16px 16px calc(24px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto}
 .loading{display:flex;flex-direction:column;align-items:center;gap:16px;padding:80px 20px}
 .loading p{color:#86868b;font-size:14px;font-weight:500}
@@ -37,11 +52,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-s
 .news-source{font-size:11px;font-weight:600;color:#0071e3;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .news-date{font-size:12px;color:#86868b;margin-left:auto;flex-shrink:0}
 .news-image{width:calc(100% + 32px);height:160px;object-fit:cover;margin:12px -16px 0 -16px;display:block}
+
+/* Empty filter state */
+.empty-filter{text-align:center;padding:60px 20px;color:#86868b}
+.empty-filter .icon{font-size:40px;margin-bottom:12px;opacity:.4}
+.empty-filter p{font-size:14px;font-weight:500}
+
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
-<header class="header">
+<div class="top-bar">
   <div class="header-content">
     <div class="header-text">
       <h1 class="title">Tech News</h1>
@@ -51,7 +72,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-s
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c-2.5-1.5-4-4-4-7s1.5-5.5 4-7"/></svg>
     </button>
   </div>
-</header>
+  <div class="source-filters" id="sourceFilters"></div>
+</div>
 <main class="container">
   <div class="loading" id="loading"><div class="spinner"></div><p>Loading news...</p></div>
   <div class="error" id="error" style="display:none"><p>Failed to load news. Tap refresh to retry.</p></div>
@@ -64,10 +86,12 @@ const FALLBACK_ICON = 'data:image/svg+xml,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">' +
   '<rect width="16" height="16" rx="4" fill="#e8e8ed"/>' +
   '<circle cx="8" cy="8" r="3.6" fill="none" stroke="#86868b" stroke-width="1.1"/>' +
-  '<path d="M4.4 8h7.2M8 4.4c1.6 1.9 1.6 5.3 0 7.2M8 4.4c-1.6 1.9-1.6 5.3 0 7.2" fill="none" stroke="#86868b" stroke-width="0.9"/></svg>'
+  '</svg>'
 );
 
 let newsData = [];
+let activeFilter = 'all';       // Currently selected source
+let sourceMap = new Map();      // source -> {count, domain}
 
 document.addEventListener('DOMContentLoaded', () => {
   loadNews();
@@ -95,6 +119,10 @@ async function loadNews(isRefresh = false) {
       ? data
       : (data.items || data.articles || data.news || data.data || []);
 
+    // Build source map from actual articles (so we only show sources that exist)
+    buildSourceMap();
+    renderFilters();
+
     const total = data.total || newsData.length;
     subtitleEl.innerHTML = data.updated_at
       ? '<span class="live-dot"></span>' + total + ' stories · updated ' + formatDate(new Date(data.updated_at))
@@ -111,14 +139,92 @@ async function loadNews(isRefresh = false) {
   }
 }
 
+// ✨ NEW: Count articles per source, extract domain from first article
+function buildSourceMap() {
+  sourceMap = new Map();
+  newsData.forEach(article => {
+    const src = article.source || '';
+    if (!src) return;
+    if (sourceMap.has(src)) {
+      sourceMap.get(src).count++;
+    } else {
+      sourceMap.set(src, { count: 1, domain: getDomain(article.url) });
+    }
+  });
+}
+
+// ✨ NEW: Render horizontal pill bar
+function renderFilters() {
+  const container = document.getElementById('sourceFilters');
+  container.innerHTML = '';
+
+  // "All" pill
+  const allBtn = createPill('all', 'All', newsData.length, null);
+  if (activeFilter === 'all') allBtn.classList.add('active');
+  container.appendChild(allBtn);
+
+  // Source pills (sorted by article count, most first)
+  const sorted = [...sourceMap.entries()].sort((a, b) => b[1].count - a[1].count);
+  sorted.forEach(([source, info]) => {
+    const btn = createPill(source, source, info.count, info.domain);
+    if (activeFilter === source) btn.classList.add('active');
+    container.appendChild(btn);
+  });
+}
+
+function createPill(key, label, count, domain) {
+  const btn = document.createElement('button');
+  btn.className = 'filter-pill';
+  btn.dataset.source = key;
+
+  const favUrl = domain
+    ? 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=32'
+    : FALLBACK_ICON;
+
+  let html = '';
+  if (domain || key === 'all') {
+    const icon = key === 'all'
+      ? '<svg class="pill-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="background:transparent"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>'
+      : '<img class="pill-icon" src="' + favUrl + '" alt="">';
+    html += icon;
+  }
+  html += '<span>' + escapeHtml(label) + '</span>';
+  html += '<span class="count">' + count + '</span>';
+  btn.innerHTML = html;
+
+  const img = btn.querySelector('img.pill-icon');
+  if (img) img.addEventListener('error', () => { img.src = FALLBACK_ICON; }, { once: true });
+
+  btn.addEventListener('click', () => {
+    activeFilter = key;
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderNews();
+  });
+
+  return btn;
+}
+
 function renderNews() {
   const list = document.getElementById('newsList');
   list.innerHTML = '';
-  if (!newsData.length) {
-    list.innerHTML = '<p style="text-align:center;color:#86868b;padding:40px 20px;">No news available</p>';
+
+  const filtered = activeFilter === 'all'
+    ? newsData
+    : newsData.filter(a => (a.source || '') === activeFilter);
+
+  // Update subtitle to reflect filter
+  const subtitleEl = document.getElementById('subtitle');
+  if (activeFilter !== 'all') {
+    subtitleEl.innerHTML = '<span class="live-dot"></span>' + filtered.length + ' ' + escapeHtml(activeFilter) + ' stories';
+  }
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-filter"><div class="icon">📭</div><p>No stories from ' + escapeHtml(activeFilter) + '</p></div>';
     return;
   }
-  newsData.forEach((a, i) => list.appendChild(createNewsCard(a, i)));
+
+  filtered.forEach((a, i) => list.appendChild(createNewsCard(a, i)));
 }
 
 function getDomain(url) {
@@ -144,7 +250,7 @@ function createNewsCard(article, index) {
   if (article.image) html += '<img src="' + article.image + '" alt="" class="news-image" loading="lazy" onerror="this.style.display=\'none\'">';
 
   card.innerHTML = html;
-  card.style.animationDelay = (index * 0.05) + 's';
+  card.style.animationDelay = (index * 0.03) + 's';
 
   const fav = card.querySelector('.source-favicon');
   fav.addEventListener('error', () => { fav.src = FALLBACK_ICON; }, { once: true });
