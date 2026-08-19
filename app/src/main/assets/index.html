@@ -9,7 +9,6 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif;background:#f5f5f7;color:#1d1d1f;-webkit-font-smoothing:antialiased}
 
-/* Sticky header + filters container */
 .top-bar{position:sticky;top:0;z-index:10;background:rgba(245,245,247,.88);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.06);padding-top:calc(16px + env(safe-area-inset-top))}
 .header-content{display:flex;justify-content:space-between;align-items:center;padding:0 20px 14px;max-width:640px;margin:0 auto}
 .header-text{display:flex;flex-direction:column;gap:3px}
@@ -22,11 +21,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-s
 .refresh-btn.spinning svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ✨ NEW: Source filter pills */
+/* Source filter pills */
 .source-filters{display:flex;gap:8px;overflow-x:auto;padding:12px 20px;max-width:640px;margin:0 auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch}
 .source-filters::-webkit-scrollbar{display:none}
 .filter-pill{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:100px;border:1px solid rgba(0,0,0,.08);background:#fff;color:#1d1d1f;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s ease;white-space:nowrap;font-family:inherit;letter-spacing:-.1px}
-.filter-pill:hover{background:#f5f5f7;border-color:rgba(0,0,0,.12)}
 .filter-pill:active{transform:scale(.95)}
 .filter-pill.active{background:#1d1d1f;color:#fff;border-color:#1d1d1f;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .filter-pill .pill-icon{width:14px;height:14px;border-radius:3px;flex-shrink:0;background:#e8e8ed}
@@ -40,20 +38,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-s
 .spinner{width:32px;height:32px;border:3px solid rgba(0,113,227,.1);border-top-color:#0071e3;border-radius:50%;animation:spin .8s linear infinite}
 .error{text-align:center;padding:80px 20px;color:#ff3b30;font-size:14px;font-weight:500}
 .news-list{display:flex;flex-direction:column;gap:12px}
+
 .news-card{background:#fff;border-radius:14px;padding:16px;text-decoration:none;color:inherit;display:block;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:transform .15s ease;animation:fadeIn .3s ease both}
 .news-card:active{transform:scale(.98)}
 .news-card.has-image{padding-bottom:0}
 .card-content{display:flex;flex-direction:column;gap:8px}
-.news-title{font-size:16px;font-weight:600;line-height:1.4;letter-spacing:-.2px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.news-description{font-size:13px;line-height:1.5;color:#6e6e73;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.news-meta{display:flex;align-items:center;gap:8px;margin-top:4px}
-.source-group{display:flex;align-items:center;gap:6px;min-width:0}
+
+/* ✨ Meta row now ON TOP, tappable source */
+.news-meta{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.source-group{display:flex;align-items:center;gap:6px;min-width:0;cursor:pointer;padding:3px 8px;margin:-3px -8px;border-radius:8px;transition:background .15s ease}
+.source-group:active{background:rgba(0,113,227,.08)}
 .source-favicon{width:14px;height:14px;border-radius:4px;flex-shrink:0;background:#e8e8ed}
 .news-source{font-size:11px;font-weight:600;color:#0071e3;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .news-date{font-size:12px;color:#86868b;margin-left:auto;flex-shrink:0}
+
+/* ✨ Bigger, bolder title */
+.news-title{font-size:18px;font-weight:700;line-height:1.35;letter-spacing:-.3px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.news-description{font-size:13px;line-height:1.5;color:#6e6e73;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .news-image{width:calc(100% + 32px);height:160px;object-fit:cover;margin:12px -16px 0 -16px;display:block}
 
-/* Empty filter state */
 .empty-filter{text-align:center;padding:60px 20px;color:#86868b}
 .empty-filter .icon{font-size:40px;margin-bottom:12px;opacity:.4}
 .empty-filter p{font-size:14px;font-weight:500}
@@ -85,13 +88,13 @@ const API_URL = 'https://rss-aggregator-api.onrender.com/api/tech';
 const FALLBACK_ICON = 'data:image/svg+xml,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">' +
   '<rect width="16" height="16" rx="4" fill="#e8e8ed"/>' +
-  '<circle cx="8" cy="8" r="3.6" fill="none" stroke="#86868b" stroke-width="1.1"/>' +
-  '</svg>'
+  '<circle cx="8" cy="8" r="3.6" fill="none" stroke="#86868b" stroke-width="1.1"/></svg>'
 );
 
 let newsData = [];
-let activeFilter = 'all';       // Currently selected source
-let sourceMap = new Map();      // source -> {count, domain}
+let activeFilter = 'all';
+let sourceMap = new Map();
+let metaInfo = { total: 0, updated_at: null };
 
 document.addEventListener('DOMContentLoaded', () => {
   loadNews();
@@ -101,13 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadNews(isRefresh = false) {
   const loadingEl = document.getElementById('loading');
   const errorEl = document.getElementById('error');
-  const newsListEl = document.getElementById('newsList');
   const refreshBtn = document.getElementById('refreshBtn');
-  const subtitleEl = document.getElementById('subtitle');
 
   loadingEl.style.display = 'flex';
   errorEl.style.display = 'none';
-  newsListEl.innerHTML = '';
+  document.getElementById('newsList').innerHTML = '';
   if (isRefresh) refreshBtn.classList.add('spinning');
 
   try {
@@ -119,93 +120,89 @@ async function loadNews(isRefresh = false) {
       ? data
       : (data.items || data.articles || data.news || data.data || []);
 
-    // Build source map from actual articles (so we only show sources that exist)
-    buildSourceMap();
-    renderFilters();
+    metaInfo = { total: data.total || newsData.length, updated_at: data.updated_at || null };
 
-    const total = data.total || newsData.length;
-    subtitleEl.innerHTML = data.updated_at
-      ? '<span class="live-dot"></span>' + total + ' stories · updated ' + formatDate(new Date(data.updated_at))
-      : '<span class="live-dot"></span>' + total + ' stories';
+    buildSourceMap();
+    // ✅ Filter persists across refreshes; reset only if source vanished
+    if (activeFilter !== 'all' && !sourceMap.has(activeFilter)) activeFilter = 'all';
+    renderFilters();
 
     renderNews();
     loadingEl.style.display = 'none';
   } catch (e) {
     loadingEl.style.display = 'none';
     errorEl.style.display = 'block';
-    subtitleEl.textContent = 'Connection failed';
+    document.getElementById('subtitle').textContent = 'Connection failed';
   } finally {
     if (isRefresh) refreshBtn.classList.remove('spinning');
   }
 }
 
-// ✨ NEW: Count articles per source, extract domain from first article
 function buildSourceMap() {
   sourceMap = new Map();
   newsData.forEach(article => {
     const src = article.source || '';
     if (!src) return;
-    if (sourceMap.has(src)) {
-      sourceMap.get(src).count++;
-    } else {
-      sourceMap.set(src, { count: 1, domain: getDomain(article.url) });
-    }
+    if (sourceMap.has(src)) sourceMap.get(src).count++;
+    else sourceMap.set(src, { count: 1, domain: getDomain(article.url) });
   });
 }
 
-// ✨ NEW: Render horizontal pill bar
 function renderFilters() {
   const container = document.getElementById('sourceFilters');
   container.innerHTML = '';
-
-  // "All" pill
-  const allBtn = createPill('all', 'All', newsData.length, null);
-  if (activeFilter === 'all') allBtn.classList.add('active');
-  container.appendChild(allBtn);
-
-  // Source pills (sorted by article count, most first)
-  const sorted = [...sourceMap.entries()].sort((a, b) => b[1].count - a[1].count);
-  sorted.forEach(([source, info]) => {
-    const btn = createPill(source, source, info.count, info.domain);
-    if (activeFilter === source) btn.classList.add('active');
-    container.appendChild(btn);
-  });
+  container.appendChild(createPill('all', 'All', newsData.length, null));
+  [...sourceMap.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .forEach(([source, info]) => container.appendChild(createPill(source, source, info.count, info.domain)));
 }
 
 function createPill(key, label, count, domain) {
   const btn = document.createElement('button');
-  btn.className = 'filter-pill';
+  btn.className = 'filter-pill' + (activeFilter === key ? ' active' : '');
   btn.dataset.source = key;
 
-  const favUrl = domain
-    ? 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=32'
-    : FALLBACK_ICON;
-
   let html = '';
-  if (domain || key === 'all') {
-    const icon = key === 'all'
-      ? '<svg class="pill-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="background:transparent"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>'
-      : '<img class="pill-icon" src="' + favUrl + '" alt="">';
-    html += icon;
+  if (key === 'all') {
+    html += '<svg class="pill-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="background:transparent"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>';
+  } else if (domain) {
+    html += '<img class="pill-icon" src="https://www.google.com/s2/favicons?domain=' + domain + '&sz=32" alt="">';
   }
-  html += '<span>' + escapeHtml(label) + '</span>';
-  html += '<span class="count">' + count + '</span>';
+  html += '<span>' + escapeHtml(label) + '</span><span class="count">' + count + '</span>';
   btn.innerHTML = html;
 
   const img = btn.querySelector('img.pill-icon');
   if (img) img.addEventListener('error', () => { img.src = FALLBACK_ICON; }, { once: true });
 
-  btn.addEventListener('click', () => {
-    activeFilter = key;
-    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderNews();
-  });
-
+  btn.addEventListener('click', () => setFilter(key, false));
   return btn;
 }
 
+// ✅ Central filter switcher (pills + card source taps)
+function setFilter(key, scrollPill) {
+  activeFilter = key;
+  document.querySelectorAll('.filter-pill').forEach(p => {
+    const isActive = p.dataset.source === key;
+    p.classList.toggle('active', isActive);
+    if (isActive && scrollPill) p.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  });
+  renderNews();
+}
+
+function updateSubtitle() {
+  const el = document.getElementById('subtitle');
+  if (activeFilter === 'all') {
+    el.innerHTML = metaInfo.updated_at
+      ? '<span class="live-dot"></span>' + metaInfo.total + ' stories · updated ' + formatDate(new Date(metaInfo.updated_at))
+      : '<span class="live-dot"></span>' + metaInfo.total + ' stories';
+  } else {
+    const count = newsData.filter(a => (a.source || '') === activeFilter).length;
+    el.innerHTML = '<span class="live-dot"></span>' + count + ' ' + escapeHtml(activeFilter) + ' stories';
+  }
+}
+
 function renderNews() {
+  updateSubtitle();
   const list = document.getElementById('newsList');
   list.innerHTML = '';
 
@@ -213,17 +210,10 @@ function renderNews() {
     ? newsData
     : newsData.filter(a => (a.source || '') === activeFilter);
 
-  // Update subtitle to reflect filter
-  const subtitleEl = document.getElementById('subtitle');
-  if (activeFilter !== 'all') {
-    subtitleEl.innerHTML = '<span class="live-dot"></span>' + filtered.length + ' ' + escapeHtml(activeFilter) + ' stories';
-  }
-
   if (!filtered.length) {
     list.innerHTML = '<div class="empty-filter"><div class="icon">📭</div><p>No stories from ' + escapeHtml(activeFilter) + '</p></div>';
     return;
   }
-
   filtered.forEach((a, i) => list.appendChild(createNewsCard(a, i)));
 }
 
@@ -241,12 +231,18 @@ function createNewsCard(article, index) {
   const domain = getDomain(article.url);
   const favicon = domain ? 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=32' : FALLBACK_ICON;
 
-  let html = '<div class="card-content"><div class="news-title">' + escapeHtml(article.title) + '</div>';
+  // ✨ NEW ORDER: meta (source + date) ABOVE the title
+  let html = '<div class="card-content">' +
+    '<div class="news-meta">' +
+      '<span class="source-group">' +
+        '<img class="source-favicon" src="' + favicon + '" alt="">' +
+        '<span class="news-source">' + escapeHtml(article.source || domain || 'Tech') + '</span>' +
+      '</span>' +
+      '<span class="news-date">' + date + '</span>' +
+    '</div>' +
+    '<div class="news-title">' + escapeHtml(article.title) + '</div>';
   if (article.description) html += '<div class="news-description">' + escapeHtml(article.description) + '</div>';
-  html += '<div class="news-meta"><span class="source-group">' +
-          '<img class="source-favicon" src="' + favicon + '" alt="">' +
-          '<span class="news-source">' + escapeHtml(article.source || domain || 'Tech') + '</span></span>' +
-          '<span class="news-date">' + date + '</span></div></div>';
+  html += '</div>';
   if (article.image) html += '<img src="' + article.image + '" alt="" class="news-image" loading="lazy" onerror="this.style.display=\'none\'">';
 
   card.innerHTML = html;
@@ -254,6 +250,15 @@ function createNewsCard(article, index) {
 
   const fav = card.querySelector('.source-favicon');
   fav.addEventListener('error', () => { fav.src = FALLBACK_ICON; }, { once: true });
+
+  // ✨ BONUS: tap the source name on a card → filter by that source
+  card.querySelector('.source-group').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFilter(article.source || '', true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
   return card;
 }
 
