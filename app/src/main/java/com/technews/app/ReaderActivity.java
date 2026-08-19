@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
@@ -43,7 +44,7 @@ public class ReaderActivity extends Activity {
         // Auto-darken external articles when system is in dark mode
         int night = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         if (night == Configuration.UI_MODE_NIGHT_YES && Build.VERSION.SDK_INT >= 29) {
-            webView.setForceDark(true);
+            webView.getSettings().setForceDark(WebSettings.FORCE_DARK_ON);
         }
 
         webView.setWebChromeClient(new WebChromeClient() {
