@@ -35,13 +35,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-s
 
 .top-bar{position:sticky;top:0;z-index:10;background:var(--topbar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--border);padding-top:calc(16px + env(safe-area-inset-top))}
 .header-content{display:flex;justify-content:space-between;align-items:center;padding:0 20px 14px;max-width:640px;margin:0 auto}
-.header-text{display:flex;flex-direction:column;gap:3px}
+.header-text{display:flex;flex-direction:column;gap:3px;min-width:0}
 .title{font-size:22px;font-weight:700;letter-spacing:-.5px}
 .subtitle{font-size:12px;color:var(--faint);font-weight:500}
 .subtitle .live-dot{display:inline-block;width:6px;height:6px;background:#34c759;border-radius:50%;margin-right:6px;animation:pulse 2s ease infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.header-actions{display:flex;gap:8px}
-.hdr-btn{width:38px;height:38px;border-radius:10px;border:none;background:var(--card);color:var(--faint);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);transition:all .2s ease}
+.header-actions{display:flex;gap:6px;flex-shrink:0}
+.hdr-btn{width:36px;height:36px;border-radius:10px;border:none;background:var(--card);color:var(--faint);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);transition:all .2s ease}
 .hdr-btn:active{transform:scale(.92);color:var(--accent)}
 .hdr-btn.active{background:var(--chip-active-bg);color:var(--chip-active-text)}
 .hdr-btn.spinning svg{animation:spin 1s linear infinite}
@@ -57,9 +57,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-s
 .filter-pill .count{font-size:11px;font-weight:600;color:var(--faint);padding:1px 6px;background:var(--border);border-radius:100px}
 .filter-pill.active .count{background:rgba(128,128,128,.25);color:var(--chip-active-text)}
 
-.date-picker{padding:12px 20px;max-width:640px;margin:0 auto;display:flex;gap:8px;align-items:center}
-.date-picker input[type="date"]{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--chip-bg);color:var(--text);font-size:14px;font-family:inherit;font-weight:500;cursor:pointer}
-.date-picker input[type="date"]:focus{outline:none;border-color:var(--accent)}
+.date-picker,.search-bar{padding:12px 20px;max-width:640px;margin:0 auto;display:none;gap:8px;align-items:center}
+.date-picker input[type="date"],.search-bar input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--chip-bg);color:var(--text);font-size:15px;font-family:inherit;font-weight:500}
+.date-picker input[type="date"]:focus,.search-bar input:focus{outline:none;border-color:var(--accent)}
 .date-picker button{padding:10px 16px;border:1px solid var(--border);border-radius:10px;background:var(--chip-bg);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s ease}
 .date-picker button:active{transform:scale(.95);background:var(--accent);color:#fff}
 
@@ -108,6 +108,9 @@ main{padding:16px 16px calc(24px + env(safe-area-inset-bottom));max-width:640px;
       <p class="subtitle" id="subtitle">Fetching latest stories…</p>
     </div>
     <div class="header-actions">
+      <button class="hdr-btn" id="searchBtn" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      </button>
       <button class="hdr-btn" id="themeBtn" aria-label="Toggle dark mode"></button>
       <button class="hdr-btn" id="archiveBtn" aria-label="Archive">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="4" x2="10" y2="20"/></svg>
@@ -121,9 +124,12 @@ main{padding:16px 16px calc(24px + env(safe-area-inset-bottom));max-width:640px;
     </div>
   </div>
   <div class="source-filters" id="sourceFilters"></div>
-  <div class="date-picker" id="datePicker" style="display:none">
+  <div class="date-picker" id="datePicker">
     <input type="date" id="archiveDate">
     <button id="viewArchive">View</button>
+  </div>
+  <div class="search-bar" id="searchBar">
+    <input type="search" id="searchInput" placeholder="Search titles, descriptions, sources…" autocomplete="off">
   </div>
 </div>
 
@@ -136,11 +142,11 @@ main{padding:16px 16px calc(24px + env(safe-area-inset-bottom));max-width:640px;
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = 'https://rss-aggregator-api-one.vercel.app/api/tech';
+const API_URL = 'https://rss-aggregator-api.onrender.com/api/tech';
 
 // ☁️ PASTE YOUR SUPABASE CREDENTIALS HERE
-const SUPABASE_URL = 'https://mifkynpgpozxqrctpncq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmt5bnBncG96eHFyY3RwbmNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0NDgxNjIsImV4cCI6MjEwMzAyNDE2Mn0.UrQ2r79hWmB7WiwMBwmdPtxsgR1ToW4IZppbbzyyvOE';
+const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
+const SUPABASE_KEY = 'YOUR-ANON-KEY';
 
 const BM_KEY = 'technews_bookmarks';
 const THEME_KEY = 'technews_theme';
@@ -156,17 +162,24 @@ const SUN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 let newsData = [], activeFilter = 'all', view = 'feed', isLoading = false;
 let sourceMap = new Map();
 let metaInfo = { total: 0, updated_at: null };
+let searchTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   applyTheme(currentTheme());
   loadNews();
+  document.getElementById('searchBtn').addEventListener('click', () => setView(view === 'search' ? 'feed' : 'search'));
   document.getElementById('themeBtn').addEventListener('click', toggleTheme);
   document.getElementById('archiveBtn').addEventListener('click', () => setView(view === 'archive' ? 'feed' : 'archive'));
   document.getElementById('viewArchive').addEventListener('click', loadArchiveForDate);
   document.getElementById('archiveDate').addEventListener('change', loadArchiveForDate);
+  document.getElementById('searchInput').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(doSearch, 350);
+  });
   document.getElementById('refreshBtn').addEventListener('click', () => {
     if (view === 'saved') renderNews();
     else if (view === 'archive') loadArchiveForDate();
+    else if (view === 'search') doSearch();
     else loadNews(true);
   });
   document.getElementById('savedBtn').addEventListener('click', () => setView(view === 'saved' ? 'feed' : 'saved'));
@@ -194,17 +207,16 @@ function toggleTheme() {
   toast(next === 'dark' ? 'Dark mode on' : 'Light mode on');
 }
 
-/* ---------- Supabase helpers ---------- */
+/* ---------- Supabase ---------- */
 function sbHeaders() {
   return { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
 }
 
-// ☁️ Auto-save new articles to the cloud (cleans data, skips duplicates, never fails silently)
 async function autoArchive(articles) {
   const seen = new Set();
   const payload = [];
   articles.forEach(a => {
-    if (!a.url || seen.has(a.url)) return; // skip broken + duplicate rows
+    if (!a.url || seen.has(a.url)) return;
     seen.add(a.url);
     payload.push({
       url: a.url,
@@ -233,7 +245,6 @@ async function autoArchive(articles) {
       return;
     }
 
-    // Visible proof: tell you how many NEW rows just landed
     const range = res.headers.get('content-range');
     const inserted = range ? parseInt(range.split('/')[1], 10) : 0;
     if (inserted > 0) toast('☁️ ' + inserted + ' new stories archived');
@@ -263,7 +274,7 @@ async function loadNews(isRefresh = false) {
     newsData = Array.isArray(data) ? data : (data.items || data.articles || data.news || data.data || []);
     metaInfo = { total: data.total || newsData.length, updated_at: data.updated_at || null };
 
-    autoArchive(newsData); // ☁️ sync to cloud
+    autoArchive(newsData);
 
     buildSourceMap();
     if (activeFilter !== 'all' && !sourceMap.has(activeFilter)) activeFilter = 'all';
@@ -296,12 +307,20 @@ function setView(v) {
   view = v;
   document.getElementById('savedBtn').classList.toggle('active', v === 'saved');
   document.getElementById('archiveBtn').classList.toggle('active', v === 'archive');
-  document.getElementById('sourceFilters').style.display = (v === 'saved' || v === 'archive') ? 'none' : 'flex';
-  document.getElementById('datePicker').style.display = v === 'archive' ? 'flex' : 'none';
+  document.getElementById('searchBtn').classList.toggle('active', v === 'search');
+  document.getElementById('sourceFilters').style.display = (v === 'feed') ? 'flex' : 'none';
+  document.getElementById('datePicker').style.display = (v === 'archive') ? 'flex' : 'none';
+  document.getElementById('searchBar').style.display = (v === 'search') ? 'flex' : 'none';
 
   if (v === 'archive') {
     document.getElementById('archiveDate').value = new Date().toISOString().split('T')[0];
     loadArchiveForDate();
+  } else if (v === 'search') {
+    updateSubtitle();
+    const q = document.getElementById('searchInput').value.trim();
+    if (q) doSearch();
+    else document.getElementById('newsList').innerHTML = '<div class="empty"><div class="icon">🔎</div><p>Search your entire news history.<br>Try "AI", "Samsung", "robot"…</p></div>';
+    setTimeout(() => document.getElementById('searchInput').focus(), 150);
   } else {
     renderNews();
   }
@@ -343,6 +362,39 @@ function createPill(key, label, count, domain) {
   return btn;
 }
 
+/* ---------- 🔍 Search ---------- */
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  const list = document.getElementById('newsList');
+  if (!q) {
+    list.innerHTML = '<div class="empty"><div class="icon">🔎</div><p>Search your entire news history.<br>Try "AI", "Samsung", "robot"…</p></div>';
+    updateSubtitle();
+    return;
+  }
+
+  list.innerHTML = '<div class="loading"><div class="spinner" style="animation:spin .8s linear infinite"></div><p>Searching…</p></div>';
+  const enc = encodeURIComponent(q);
+  const urlQ = SUPABASE_URL + '/rest/v1/articles?or=(title.ilike.*' + enc + '*,description.ilike.*' + enc + '*,source.ilike.*' + enc + '*)&order=date.desc&limit=200';
+
+  try {
+    const res = await fetch(urlQ, { headers: sbHeaders() });
+    if (!res.ok) throw new Error('Search failed');
+    const rows = await res.json();
+
+    document.getElementById('subtitle').innerHTML =
+      '<span class="live-dot" style="background:var(--accent)"></span>' + rows.length + ' result' + (rows.length === 1 ? '' : 's') + ' for "' + escapeHtml(q) + '"';
+
+    list.innerHTML = '';
+    if (!rows.length) {
+      list.innerHTML = '<div class="empty"><div class="icon">🔎</div><p>No stories found for "' + escapeHtml(q) + '"</p></div>';
+      return;
+    }
+    rows.forEach((a, i) => list.appendChild(createNewsCard(a, i)));
+  } catch (e) {
+    list.innerHTML = '<div class="empty"><div class="icon">📡</div><p>Search failed.<br>Check your connection and try again.</p></div>';
+  }
+}
+
 /* ---------- Rendering ---------- */
 function updateSubtitle() {
   const el = document.getElementById('subtitle');
@@ -350,6 +402,8 @@ function updateSubtitle() {
     el.innerHTML = '<span class="live-dot" style="background:var(--accent)"></span>' + getBookmarks().length + ' saved stories';
   } else if (view === 'archive') {
     el.innerHTML = '<span class="live-dot" style="background:#ff9500"></span>Browsing cloud archive';
+  } else if (view === 'search') {
+    el.innerHTML = '<span class="live-dot" style="background:var(--accent)"></span>Search your full archive';
   } else if (activeFilter !== 'all') {
     const n = newsData.filter(a => (a.source || '') === activeFilter).length;
     el.innerHTML = '<span class="live-dot"></span>' + n + ' ' + escapeHtml(activeFilter) + ' stories';
@@ -375,7 +429,7 @@ function renderNews() {
     return;
   }
 
-  if (view === 'archive') return;
+  if (view === 'archive' || view === 'search') return;
 
   const filtered = activeFilter === 'all' ? newsData : newsData.filter(a => (a.source || '') === activeFilter);
   if (!filtered.length) {
@@ -385,7 +439,6 @@ function renderNews() {
   filtered.forEach((a, i) => list.appendChild(createNewsCard(a, i)));
 }
 
-// ☁️ Fetch one day of history from Supabase
 async function loadArchiveForDate() {
   const dateVal = document.getElementById('archiveDate').value;
   if (!dateVal) return;
@@ -402,10 +455,9 @@ async function loadArchiveForDate() {
     if (!res.ok) throw new Error('Archive fetch failed');
     const rows = await res.json();
 
-    updateSubtitle();
     document.getElementById('subtitle').innerHTML =
       '<span class="live-dot" style="background:#ff9500"></span>' + rows.length +
-      ' archived stories · ' + new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      ' archived stories · ' + start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     list.innerHTML = '';
     if (!rows.length) {
@@ -472,7 +524,7 @@ function shareArticle(a) {
   else window.open(a.url, '_blank');
 }
 
-/* ---------- Bookmarks (stay local — tiny & personal) ---------- */
+/* ---------- Bookmarks ---------- */
 function getBookmarks() { try { return JSON.parse(localStorage.getItem(BM_KEY)) || []; } catch (e) { return []; } }
 function isBookmarked(url) { return getBookmarks().some(b => b.url === url); }
 function toggleBookmark(a) {
@@ -550,7 +602,6 @@ function formatDate(date) {
   const ms = Date.now() - date;
   const m = Math.floor(ms / 60000), h = Math.floor(ms / 3600000), d = Math.floor(ms / 86400000);
   if (m < 1) return 'just now';
-  if (m < 60) return m + 'm ago';
   if (h < 24) return h + 'h ago';
   if (d < 7) return d + 'd ago';
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
