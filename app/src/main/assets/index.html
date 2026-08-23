@@ -37,7 +37,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-s
 .header-content{display:flex;justify-content:space-between;align-items:center;padding:0 20px 14px;max-width:640px;margin:0 auto}
 .header-text{display:flex;flex-direction:column;gap:3px;min-width:0}
 .title{font-size:22px;font-weight:700;letter-spacing:-.5px}
-.subtitle{font-size:12px;color:var(--faint);font-weight:500}
+.subtitle{font-size:12px;color:var(--faint);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .subtitle .live-dot{display:inline-block;width:6px;height:6px;background:#34c759;border-radius:50%;margin-right:6px;animation:pulse 2s ease infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .header-actions{display:flex;gap:6px;flex-shrink:0}
