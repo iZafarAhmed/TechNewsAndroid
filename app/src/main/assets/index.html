@@ -199,24 +199,47 @@ function sbHeaders() {
   return { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
 }
 
-// ☁️ Auto-save every loaded article to the cloud (upsert = no duplicates)
-function autoArchive(articles) {
-  const payload = articles.map(a => ({
-    url: a.url,
-    title: a.title || '',
-    description: a.description || '',
-    source: a.source || '',
-    image: a.image || null,
-    date: a.date || null
-  }));
-  fetch(SUPABASE_URL + '/rest/v1/articles?on_conflict=url', {
-    method: 'POST',
-    headers: Object.assign({
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates'
-    }, sbHeaders()),
-    body: JSON.stringify(payload)
-  }).catch(e => console.warn('Archive sync skipped:', e));
+// ☁️ Auto-save new articles to the cloud (cleans data, skips duplicates, never fails silently)
+async function autoArchive(articles) {
+  const seen = new Set();
+  const payload = [];
+  articles.forEach(a => {
+    if (!a.url || seen.has(a.url)) return; // skip broken + duplicate rows
+    seen.add(a.url);
+    payload.push({
+      url: a.url,
+      title: a.title || '',
+      description: a.description || '',
+      source: a.source || '',
+      image: a.image || null,
+      date: a.date || null
+    });
+  });
+  if (!payload.length) return;
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/articles?on_conflict=url', {
+      method: 'POST',
+      headers: Object.assign({
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=ignore-duplicates, count=exact'
+      }, sbHeaders()),
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      console.warn('Archive sync failed:', res.status, await res.text());
+      toast('☁️ Sync failed (' + res.status + ')');
+      return;
+    }
+
+    // Visible proof: tell you how many NEW rows just landed
+    const range = res.headers.get('content-range');
+    const inserted = range ? parseInt(range.split('/')[1], 10) : 0;
+    if (inserted > 0) toast('☁️ ' + inserted + ' new stories archived');
+  } catch (e) {
+    console.warn('Archive sync skipped:', e);
+  }
 }
 
 /* ---------- Data ---------- */
