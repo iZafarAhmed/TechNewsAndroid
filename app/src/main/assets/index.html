@@ -409,8 +409,8 @@ function updateSubtitle() {
     el.innerHTML = '<span class="live-dot"></span>' + n + ' ' + escapeHtml(activeFilter) + ' stories';
   } else {
     el.innerHTML = metaInfo.updated_at
-      ? '<span class="live-dot"></span>' + metaInfo.total + ' stories · updated ' + formatDate(new Date(metaInfo.updated_at))
-      : '<span class="live-dot"></span>' + metaInfo.total + ' stories';
+      ? '<span class="live-dot"></span>Updated ' + formatDate(new Date(metaInfo.updated_at))
+      : '<span class="live-dot"></span>Live feed';
   }
 }
 
@@ -602,6 +602,7 @@ function formatDate(date) {
   const ms = Date.now() - date;
   const m = Math.floor(ms / 60000), h = Math.floor(ms / 3600000), d = Math.floor(ms / 86400000);
   if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
   if (h < 24) return h + 'h ago';
   if (d < 7) return d + 'd ago';
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
